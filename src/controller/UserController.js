@@ -1,67 +1,144 @@
 
-import UserModel from "../models/user.js";
+import User from "../models/user.js";
 
-class UserController {
-  static async getAllUsers(req, res) {
+export default class UserController {
+  async getUsers(req, res) {
     try {
-      const users = await UserModel.findAll();
-      res.json(users);
+      const users = await User.findAll();
+      res.status(200).json({
+        success: true,
+        data: users,
+        message: "Users fetched successfully"
+      });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
     }
   }
 
-  static async getUserById(req, res) {
+  async getUserById(req, res) {
     try {
       const { id } = req.params;
-      const user = await UserModel.findById(id);
-      
+      const user = await User.findById(id);
+
       if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
       }
-      
-      res.json(user);
+
+      res.status(200).json({
+        success: true,
+        data: user,
+        message: "User fetched successfully"
+      });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
     }
   }
 
-  static async createUser(req, res) {
+  async createUser(req, res) {
     try {
-      const { name } = req.body;
-      
-      if (!name) {
-        return res.status(400).json({ message: "Name is required" });
+      const { name, age } = req.body;
+
+      if (!name || age === undefined) {
+        return res.status(400).json({
+          success: false,
+          message: "Name and age are required"
+        });
       }
-      
-      const newUser = await UserModel.create({ name });
-      res.status(201).json(newUser);
+
+      if (age < 0 || age > 150) {
+        return res.status(400).json({
+          success: false,
+          message: "Age must be between 0 and 150"
+        });
+      }
+
+      const user = await User.create({ name, age });
+
+      res.status(201).json({
+        success: true,
+        data: user,
+        message: "User created successfully"
+      });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
     }
   }
 
-  static async updateUser(req, res) {
+  async updateUser(req, res) {
     try {
       const { id } = req.params;
-      const { name } = req.body;
-      
-      const updatedUser = await UserModel.update(id, { name });
-      res.json(updatedUser);
+      const { name, age } = req.body;
+
+      if (name === undefined && age === undefined) {
+        return res.status(400).json({
+          success: false,
+          message: "At least one field (name or age) is required for update"
+        });
+      }
+
+      const existingUser = await User.findById(id);
+      if (!existingUser) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+
+      const updateData = {
+        name: name !== undefined ? name : existingUser.name,
+        age: age !== undefined ? age : existingUser.age
+      };
+
+      const updatedUser = await User.update(id, updateData);
+
+      res.status(200).json({
+        success: true,
+        data: updatedUser,
+        message: "User updated successfully"
+      });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
     }
   }
 
-  static async deleteUser(req, res) {
+  async deleteUser(req, res) {
     try {
       const { id } = req.params;
-      await UserModel.delete(id);
-      res.json({ message: "User deleted" });
+
+      const existingUser = await User.findById(id);
+      if (!existingUser) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+
+      await User.delete(id);
+
+      res.status(200).json({
+        success: true,
+        message: "User deleted successfully"
+      });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
     }
   }
 }
-
-export default UserController;
